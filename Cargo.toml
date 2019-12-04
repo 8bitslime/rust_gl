@@ -1,0 +1,13 @@
+[package]
+name = "rust_gl"
+version = "0.1.0"
+authors = ["Zachary Wells <8bitslime@gmail.com>"]
+edition = "2018"
+
+[profile.dev]
+debug = false
+
+[dependencies]
+glutin = "0.22.0-alpha5"
+glam   = "0.8.3"
+gl     = "0.14.0"
