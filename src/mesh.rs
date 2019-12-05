@@ -41,7 +41,7 @@ impl Mesh {
             gl::FLOAT,
             gl::FALSE,
             (stride * f32size) as GLsizei,
-            0 as *const _);
+            std::ptr::null());
     }
     pub fn buffer_data_1f(&self, buffer: usize, data: &[f32]) {
         unsafe { self.buffer_data_f(buffer, 1, 1, data.len(), data.as_ptr()) };

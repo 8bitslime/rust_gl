@@ -6,7 +6,6 @@ use std::ffi::CString;
 
 pub struct Shader(GLuint);
 impl Shader {
-    #[must_use]
     pub fn create_header(header: &str, source: &str, shader_type: GLenum) -> Result<Shader, String> {
         let strings = [
             header.as_ptr() as *const GLchar,
@@ -41,7 +40,6 @@ impl Shader {
             }
         }
     }
-    #[must_use]
     pub fn create(source: &str, shader_type: GLenum) -> Result<Shader, String> {
         Shader::create_header("", source, shader_type)
     }
@@ -55,11 +53,9 @@ impl Drop for Shader {
 pub struct Program(GLuint);
 type Uniform = GLint;
 impl Program {
-    #[must_use]
     pub fn new() -> Program {
         Program(unsafe { gl::CreateProgram() })
     }
-    #[must_use]
     pub fn from_source(source: &str) -> Result<Program, String> {
         let vertex = Shader::create_header(
             "#version 450 core\n#define VERTEX\n",
@@ -89,7 +85,6 @@ impl Program {
             gl::DetachShader(self.0, shader.0);
         };
     }
-    #[must_use]
     pub fn link(self) -> Result<Program, String> {
         unsafe {
             gl::LinkProgram(self.0);

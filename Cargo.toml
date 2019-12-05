@@ -5,7 +5,7 @@ authors = ["Zachary Wells <8bitslime@gmail.com>"]
 edition = "2018"
 
 [profile.dev]
-debug = false
+debug = true
 
 [dependencies]
 glutin = "0.22.0-alpha5"

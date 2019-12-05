@@ -6,6 +6,8 @@ extern crate glutin;
 mod shader;
 mod mesh;
 
+mod objparse;
+
 use {
     gl::types::*,
 
@@ -13,10 +15,12 @@ use {
     glutin::event_loop::{ControlFlow, EventLoop},
     glutin::window::WindowBuilder,
     glutin::ContextBuilder,
+    glutin::dpi::{LogicalSize},
     glutin::{GlProfile, GlRequest, Api},
     
     glam::*,
     
+    objparse::*,
     shader::*,
     mesh::*,
 };
@@ -34,7 +38,8 @@ fn main() {
     let el = EventLoop::new();
     let wb = WindowBuilder::new()
         .with_title("New window, who this?")
-        .with_inner_size(glutin::dpi::LogicalSize::new(640.0, 480.0));
+        .with_inner_size(LogicalSize::new(640.0, 480.0))
+        .with_min_inner_size(LogicalSize::new(320.0, 200.0));
     let context = ContextBuilder::new()
         .with_gl(GlRequest::Specific(Api::OpenGl, (4, 5)))
         .with_gl_profile(GlProfile::Core)
@@ -76,9 +81,10 @@ fn main() {
     let model_loc = program.get_uniform("model").unwrap();
     let world_loc = program.get_uniform("world").unwrap();
     
-    let triangle = &[ vec3(0., 1., 0.), vec3(1., -1., 0.), vec3(-1., -1., 0.) ];
+    let obj = OBJ::from_file("res/test.obj").unwrap();
+    let verts: Vec<Vec3> = obj.iter().collect();
     let mesh = Mesh::new(1);
-    mesh.buffer_data_3f(0, triangle);
+    mesh.buffer_data_3f(0, verts.as_ref());
     
     unsafe {
         let world_mat = Mat4::perspective_rh_gl(1.57, 640./480., 0.001, 1000.0);
