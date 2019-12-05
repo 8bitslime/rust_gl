@@ -60,10 +60,7 @@ impl OBJ {
                     }
                     
                     Some("f") => {
-                        let a = usize::from_str(iter.next().unwrap()).unwrap();
-                        let b = usize::from_str(iter.next().unwrap()).unwrap();
-                        let c = usize::from_str(iter.next().unwrap()).unwrap();
-                        obj.faces.push(Face::Tri([[a, 0, 0], [b, 0, 0], [c, 0, 0]]));
+                        obj.faces.push(parse_face(&mut iter));
                     },
                     
                     //Skip unhandled stuff
@@ -77,13 +74,26 @@ impl OBJ {
     }
 }
 
+fn parse_face<'a, I: Iterator<Item=&'a str>>(words: &mut I) -> Face {
+    let mut face = [[0; 3]; 3];
+    words.enumerate().for_each(|(i, word)| {
+        let iter = word.split('/');
+        let ints: Vec<usize> = iter.map(|s| usize::from_str(s).unwrap_or(0)).collect();
+        for (j, int) in ints.iter().enumerate() {
+            face[i][j] = *int;
+        }
+    });
+    
+    Face::Tri(face)
+}
+
 pub struct OBJIter<'a> {
     obj:   &'a OBJ,
     index:      usize,
     face_index: usize,
 }
 impl<'a> Iterator for OBJIter<'a> {
-    type Item = Vec3;
+    type Item = (Vec3, Vec3, Vec2);
     
     fn next(&mut self) -> Option<Self::Item> {
         let obj = self.obj;
@@ -97,7 +107,22 @@ impl<'a> Iterator for OBJIter<'a> {
                 Face::Tri(ints) => {
                     let index = ints[self.face_index];
                     self.face_index += 1;
-                    Some(obj.vertices[index[0] - 1])
+                    
+                    Some((
+                        obj.vertices[index[0] - 1],
+                        
+                        if index[2] > 0 {
+                            obj.normals[index[2] - 1]
+                        } else {
+                            Vec3::new(0., 0., 0.)
+                        },
+                        
+                        if index[1] > 0 {
+                            obj.uvs[index[1] - 1]
+                        } else {
+                            Vec2::new(0., 0.)
+                        }
+                    ))
                 }
             }
         } else {

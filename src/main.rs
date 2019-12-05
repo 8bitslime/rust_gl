@@ -52,22 +52,40 @@ fn main() {
     println!("OpenGL Renderer:\t{}", gl_get_string(gl::RENDERER));
     println!("OpenGL Version:\t{}", gl_get_string(gl::VERSION));
     
+    //Set up OpenGL
+    unsafe {
+        gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::CULL_FACE);
+        gl::CullFace(gl::CCW);
+    }
+    
     let shader_source = r#"
     #ifdef VERTEX
     
     layout (location = 0) in vec3 pos;
+    layout (location = 1) in vec3 norm;
+    layout (location = 2) in vec2 uv;
     uniform mat4 world;
     uniform mat4 model;
     
+    out vec3 normal;
+    out vec2 coord;
+    
     void main() {
         gl_Position = world * model * vec4(pos, 1);
+        normal = (model * vec4(norm, 0)).xyz;
+        coord = uv;
     }
     #endif
     
     #ifdef FRAGMENT
+    
+    in vec3 normal;
+    in vec2 coord;
+    
     out vec4 glColor;
     void main() {
-        glColor = vec4(1, 1, 1, 1);
+        glColor = vec4(1, 1, 1, 1) * dot(vec3(0, 0, 1), normal);
     }
     #endif
     "#;
@@ -81,10 +99,21 @@ fn main() {
     let model_loc = program.get_uniform("model").unwrap();
     let world_loc = program.get_uniform("world").unwrap();
     
-    let obj = OBJ::from_file("res/test.obj").unwrap();
-    let verts: Vec<Vec3> = obj.iter().collect();
-    let mesh = Mesh::new(1);
+    let obj = OBJ::from_file("res/box.obj").unwrap();
+    let mut verts = Vec::<Vec3>::new();
+    let mut norms = Vec::<Vec3>::new();
+    let mut uvs   = Vec::<Vec2>::new();
+    
+    obj.iter().for_each(|(vertex, normal, uv)| {
+        verts.push(vertex);
+        norms.push(normal);
+        uvs.push(uv);
+    });
+    
+    let mesh = Mesh::new(3);
     mesh.buffer_data_3f(0, verts.as_ref());
+    mesh.buffer_data_3f(1, norms.as_ref());
+    mesh.buffer_data_2f(2, uvs.as_ref());
     
     unsafe {
         let world_mat = Mat4::perspective_rh_gl(1.57, 640./480., 0.001, 1000.0);
@@ -99,8 +128,8 @@ fn main() {
         unsafe {
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
             gl::ClearColor(1.0, 0.4, 0.4, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            mesh.draw(3, 0);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            mesh.draw(36, 0);
         }
         context.swap_buffers().unwrap();
     };
