@@ -2,10 +2,12 @@
 extern crate gl;
 extern crate glam;
 extern crate glutin;
+extern crate image;
 extern crate mol;
 
 mod shader;
 mod mesh;
+mod texture;
 
 use {
     gl::types::*,
@@ -21,6 +23,9 @@ use {
     
     shader::*,
     mesh::*,
+    texture::*,
+    
+    std::path::Path,
 };
 
 type Context = glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>;
@@ -79,12 +84,14 @@ fn main() {
     
     #ifdef FRAGMENT
     
+    uniform sampler2D diffuse;
+    
     in vec3 normal;
     in vec2 coord;
     
     out vec4 glColor;
     void main() {
-        glColor = vec4(1, 1, 1, 1) * dot(vec3(0, 0, 1), normal);
+        glColor = texture(diffuse, coord) * max(vec4(1, 1, 1, 1) * dot(vec3(0, 0, 1), normal), vec4(0.2));
     }
     #endif
     "#;
@@ -100,19 +107,19 @@ fn main() {
     
     let start_time = std::time::Instant::now();
     
-    let obj = mol::obj::OBJ::from_path(std::path::Path::new("res/monkey.obj")).unwrap();
+    let obj = mol::obj::OBJ::from_path(Path::new("res/box.obj")).unwrap();
     let mut verts = Vec::<Vec3>::new();
     let mut norms = Vec::<Vec3>::new();
     let mut uvs   = Vec::<Vec2>::new();
     
     obj.flat_iter().for_each(|(vertex, uv, normal)| {
-        verts.push(Vec3::new(vertex[0], vertex[1], vertex[2]));
-        uvs.push(Vec2::new(uv[0], uv[1]));
-        norms.push(Vec3::new(normal[0], normal[1], normal[2]));
+        verts.push(Vec3::new(vertex.x, vertex.y, vertex.z));
+        uvs.push(Vec2::new(uv.x, uv.y));
+        norms.push(Vec3::new(normal.x, normal.y, normal.z));
     });
     
     let duration = start_time.elapsed().as_micros() as f64;
-    println!("Mol       {}ms", duration / 1000.);
+    println!("Model load time: {}ms", duration / 1000.);
     
     let mesh_size = verts.len();
     
@@ -120,6 +127,9 @@ fn main() {
     mesh.buffer_data_3f(0, verts.as_ref());
     mesh.buffer_data_3f(1, norms.as_ref());
     mesh.buffer_data_2f(2, uvs.as_ref());
+    
+    let texture = Texture::from_path(Path::new("res/brick.png")).unwrap();
+    texture.bind();
     
     unsafe {
         let world_mat = Mat4::perspective_rh_gl(1.5, 640./480., 0.001, 1000.0);
@@ -137,7 +147,7 @@ fn main() {
         
         let model_mat =
             Mat4::from_translation(Vec3::new(0., 0., -3.)) *
-            Mat4::from_axis_angle(Vec3::new(1., 5., 0.).normalize(), elapsed);
+            Mat4::from_axis_angle(Vec3::new(1., 1., 0.).normalize(), elapsed);
         unsafe {
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
             mesh.draw(mesh_size, 0);

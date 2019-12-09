@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use gl::types::*;
 use std::ffi::CStr;
@@ -40,6 +39,8 @@ impl Shader {
             }
         }
     }
+    
+    #[allow(dead_code)]
     pub fn create(source: &str, shader_type: GLenum) -> Result<Shader, String> {
         Shader::create_header("", source, shader_type)
     }

@@ -11,4 +11,5 @@ debug = true
 glutin = "0.22.0-alpha5"
 glam   = "0.8.3"
 gl     = "0.14.0"
-mol = { git = "https://github.com/MLJWare/mol.git", branch = "8bitslime-initial"}
+image = "0.22.3"
+mol = { git = "https://github.com/MLJWare/mol.git", branch = "todo/vector-type"}
