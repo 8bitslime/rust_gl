@@ -2,11 +2,10 @@
 extern crate gl;
 extern crate glam;
 extern crate glutin;
+extern crate mol;
 
 mod shader;
 mod mesh;
-
-mod objparse;
 
 use {
     gl::types::*,
@@ -20,7 +19,6 @@ use {
     
     glam::*,
     
-    objparse::*,
     shader::*,
     mesh::*,
 };
@@ -100,16 +98,21 @@ fn main() {
     let model_loc = program.get_uniform("model").unwrap();
     let world_loc = program.get_uniform("world").unwrap();
     
-    let obj = OBJ::from_file("res/monkey.obj").unwrap();
+    let start_time = std::time::Instant::now();
+    
+    let obj = mol::obj::OBJ::from_path(std::path::Path::new("res/monkey.obj")).unwrap();
     let mut verts = Vec::<Vec3>::new();
     let mut norms = Vec::<Vec3>::new();
     let mut uvs   = Vec::<Vec2>::new();
     
-    obj.iter().for_each(|(vertex, normal, uv)| {
-        verts.push(vertex);
-        norms.push(normal);
-        uvs.push(uv);
+    obj.flat_iter().for_each(|(vertex, uv, normal)| {
+        verts.push(Vec3::new(vertex[0], vertex[1], vertex[2]));
+        uvs.push(Vec2::new(uv[0], uv[1]));
+        norms.push(Vec3::new(normal[0], normal[1], normal[2]));
     });
+    
+    let duration = start_time.elapsed().as_micros() as f64;
+    println!("Mol       {}ms", duration / 1000.);
     
     let mesh_size = verts.len();
     
@@ -119,21 +122,27 @@ fn main() {
     mesh.buffer_data_2f(2, uvs.as_ref());
     
     unsafe {
-        let world_mat = Mat4::perspective_rh_gl(1.57, 640./480., 0.001, 1000.0);
+        let world_mat = Mat4::perspective_rh_gl(1.5, 640./480., 0.001, 1000.0);
         gl::UniformMatrix4fv(world_loc, 1, gl::FALSE, world_mat.as_ref().as_ptr());
     }
     
     let start_time = std::time::Instant::now();
     let render = move |context: &Context| {
-        let model_mat =
-            Mat4::from_translation(Vec3::new(0., 0., -3.)) *
-            Mat4::from_axis_angle(Vec3::new(0., 1., 0.).normalize(), start_time.elapsed().as_secs_f32());
+        let elapsed = start_time.elapsed().as_secs_f32();
+        
         unsafe {
-            gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
             gl::ClearColor(1.0, 0.4, 0.4, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        };
+        
+        let model_mat =
+            Mat4::from_translation(Vec3::new(0., 0., -3.)) *
+            Mat4::from_axis_angle(Vec3::new(1., 5., 0.).normalize(), elapsed);
+        unsafe {
+            gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
             mesh.draw(mesh_size, 0);
         }
+        
         context.swap_buffers().unwrap();
     };
     

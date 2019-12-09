@@ -48,7 +48,7 @@ impl Mesh {
     }
     pub fn buffer_data_2f(&self, buffer: usize, data: &[glam::Vec2]) {
         const SIZE: usize = size_of::<glam::Vec2>() / size_of::<f32>();
-        unsafe { self.buffer_data_f(buffer, 2, SIZE, data.len() * 2, data.as_ptr() as *const f32) };
+        unsafe { self.buffer_data_f(buffer, 2, SIZE, data.len(), data.as_ptr() as *const f32) };
     }
     pub fn buffer_data_3f(&self, buffer: usize, data: &[glam::Vec3]) {
         //Check to see if vec3 is a __m128 or [f32; 3]
