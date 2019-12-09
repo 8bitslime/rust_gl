@@ -47,15 +47,17 @@ impl Mesh {
         unsafe { self.buffer_data_f(buffer, 1, 1, data.len(), data.as_ptr()) };
     }
     pub fn buffer_data_2f(&self, buffer: usize, data: &[glam::Vec2]) {
-        unsafe { self.buffer_data_f(buffer, 2, 1, data.len() * 2, data.as_ptr() as *const f32) };
+        const SIZE: usize = size_of::<glam::Vec2>() / size_of::<f32>();
+        unsafe { self.buffer_data_f(buffer, 2, SIZE, data.len() * 2, data.as_ptr() as *const f32) };
     }
     pub fn buffer_data_3f(&self, buffer: usize, data: &[glam::Vec3]) {
         //Check to see if vec3 is a __m128 or [f32; 3]
-        let size = size_of::<glam::Vec3>() / size_of::<f32>();
-        unsafe { self.buffer_data_f(buffer, 3, size, data.len(), data.as_ptr() as *const f32) };
+        const SIZE: usize = size_of::<glam::Vec3>() / size_of::<f32>();
+        unsafe { self.buffer_data_f(buffer, 3, SIZE, data.len(), data.as_ptr() as *const f32) };
     }
     pub fn buffer_data_4f(&self, buffer: usize, data: &[glam::Vec4]) {
-        unsafe { self.buffer_data_f(buffer, 4, 4, data.len(), data.as_ptr() as *const f32) };
+        const SIZE: usize = size_of::<glam::Vec4>() / size_of::<f32>();
+        unsafe { self.buffer_data_f(buffer, 4, SIZE, data.len(), data.as_ptr() as *const f32) };
     }
     pub fn draw(&self, length: usize, offset: usize) {
         unsafe {

@@ -54,9 +54,10 @@ fn main() {
     
     //Set up OpenGL
     unsafe {
-        gl::Enable(gl::DEPTH_TEST);
+        gl::FrontFace(gl::CCW);
+        gl::CullFace(gl::BACK);
         gl::Enable(gl::CULL_FACE);
-        gl::CullFace(gl::CCW);
+        gl::Enable(gl::DEPTH_TEST);
     }
     
     let shader_source = r#"
@@ -99,7 +100,7 @@ fn main() {
     let model_loc = program.get_uniform("model").unwrap();
     let world_loc = program.get_uniform("world").unwrap();
     
-    let obj = OBJ::from_file("res/box.obj").unwrap();
+    let obj = OBJ::from_file("res/monkey.obj").unwrap();
     let mut verts = Vec::<Vec3>::new();
     let mut norms = Vec::<Vec3>::new();
     let mut uvs   = Vec::<Vec2>::new();
@@ -109,6 +110,8 @@ fn main() {
         norms.push(normal);
         uvs.push(uv);
     });
+    
+    let mesh_size = verts.len();
     
     let mesh = Mesh::new(3);
     mesh.buffer_data_3f(0, verts.as_ref());
@@ -122,20 +125,19 @@ fn main() {
     
     let start_time = std::time::Instant::now();
     let render = move |context: &Context| {
-        let model_mat = 
+        let model_mat =
             Mat4::from_translation(Vec3::new(0., 0., -3.)) *
-            Mat4::from_axis_angle(Vec3::new(0., 1., 0.), start_time.elapsed().as_secs_f32());
+            Mat4::from_axis_angle(Vec3::new(0., 1., 0.).normalize(), start_time.elapsed().as_secs_f32());
         unsafe {
             gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
             gl::ClearColor(1.0, 0.4, 0.4, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            mesh.draw(36, 0);
+            mesh.draw(mesh_size, 0);
         }
         context.swap_buffers().unwrap();
     };
     
     el.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Poll;
         
         match event {
             Event::LoopDestroyed => return,
@@ -156,9 +158,9 @@ fn main() {
                 WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 },
-                _ => ()
+                _ => {}
             },
-            _ => ()
+            _ => {}
         }
         render(&context);
     });

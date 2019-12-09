@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use std::fs::File;
 use std::path::Path;
@@ -102,31 +101,24 @@ impl<'a> Iterator for OBJIter<'a> {
             self.face_index = 0;
             self.index += 1;
         }
-        if let Some(face) = obj.faces.get(self.index) {
-            match face {
-                Face::Tri(ints) => {
-                    let index = ints[self.face_index];
-                    self.face_index += 1;
-                    
-                    Some((
-                        obj.vertices[index[0] - 1],
-                        
-                        if index[2] > 0 {
-                            obj.normals[index[2] - 1]
-                        } else {
-                            Vec3::new(0., 0., 0.)
-                        },
-                        
-                        if index[1] > 0 {
-                            obj.uvs[index[1] - 1]
-                        } else {
-                            Vec2::new(0., 0.)
-                        }
-                    ))
-                }
+        let Face::Tri(ints) = obj.faces.get(self.index)?;
+        let index = ints[self.face_index];
+        self.face_index += 1;
+        
+        Some((
+            obj.vertices[index[0] - 1],
+            
+            if index[2] > 0 {
+                obj.normals[index[2] - 1]
+            } else {
+                Vec3::new(0., 0., 0.)
+            },
+            
+            if index[1] > 0 {
+                obj.uvs[index[1] - 1]
+            } else {
+                Vec2::new(0., 0.)
             }
-        } else {
-            None
-        }
+        ))
     }
 }
