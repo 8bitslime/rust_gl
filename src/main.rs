@@ -8,6 +8,7 @@ extern crate mol;
 mod shader;
 mod mesh;
 mod texture;
+mod gl2d;
 
 use {
     gl::types::*,
@@ -112,11 +113,14 @@ fn main() {
     let mut norms = Vec::<Vec3>::new();
     let mut uvs   = Vec::<Vec2>::new();
     
-    obj.flat_iter().for_each(|(vertex, uv, normal)| {
-        verts.push(Vec3::new(vertex.x, vertex.y, vertex.z));
-        uvs.push(Vec2::new(uv.x, uv.y));
-        norms.push(Vec3::new(normal.x, normal.y, normal.z));
-    });
+    for (vert, uv, norm) in obj.flat_iter() {
+        let pos = Vec3::new(vert.x, vert.y, vert.z);
+        let norm = Vec3::new(norm.x, norm.y, norm.z);
+        let uv = Vec2::new(uv.x, uv.y);
+        verts.push(pos);
+        norms.push(norm);
+        uvs.push(uv);
+    }
     
     let duration = start_time.elapsed().as_micros() as f64;
     println!("Model load time: {}ms", duration / 1000.);
@@ -132,7 +136,7 @@ fn main() {
     texture.bind();
     
     unsafe {
-        let world_mat = Mat4::perspective_rh_gl(1.5, 640./480., 0.001, 1000.0);
+        let world_mat = Mat4::perspective_rh_gl(1.7, 640./480., 0.001, 1000.0);
         gl::UniformMatrix4fv(world_loc, 1, gl::FALSE, world_mat.as_ref().as_ptr());
     }
     
@@ -141,23 +145,21 @@ fn main() {
         let elapsed = start_time.elapsed().as_secs_f32();
         
         unsafe {
-            gl::ClearColor(1.0, 0.4, 0.4, 1.0);
+            gl::ClearColor(0.1, 0.1, 0.15, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         };
         
-        let model_mat =
-            Mat4::from_translation(Vec3::new(0., 0., -3.)) *
-            Mat4::from_axis_angle(Vec3::new(1., 1., 0.).normalize(), elapsed);
-        unsafe {
-            gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_mat.as_ref().as_ptr());
-            mesh.draw(mesh_size, 0);
-        }
+        let distance = elapsed.sin() * 1.5 - 4.;
         
+        let model_mat =
+            Mat4::from_translation(Vec3::new(0., 0., distance)) *
+            Mat4::from_axis_angle(Vec3::new(1., 1., 0.).normalize(), elapsed * std::f32::consts::PI * 0.5);
+        program.set_uniform(model_loc, &model_mat);
+        mesh.draw(mesh_size, 0);
         context.swap_buffers().unwrap();
     };
     
     el.run(move |event, _, control_flow| {
-        
         match event {
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => match event {

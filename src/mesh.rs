@@ -24,6 +24,7 @@ impl Mesh {
             mesh
         }
     }
+    
     pub unsafe fn buffer_data_f(&self, buffer: usize, vec_size: usize, stride: usize, length: usize, data: *const f32) {
         debug_assert!(buffer < MAX_BUFFERS);
         let f32size: usize = size_of::<f32>();
@@ -59,10 +60,36 @@ impl Mesh {
         const SIZE: usize = size_of::<glam::Vec4>() / size_of::<f32>();
         unsafe { self.buffer_data_f(buffer, 4, SIZE, data.len(), data.as_ptr() as *const f32) };
     }
+    
+    pub fn element_buffer_data(&self, buffer: usize, data: &[u32]) {
+        const USIZE: usize = size_of::<u32>();
+        debug_assert!(buffer < MAX_BUFFERS);
+        unsafe {
+            gl::BindVertexArray(self.vao);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.vbo[buffer]);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (data.len() * USIZE) as GLsizeiptr,
+                data.as_ptr() as *const _,
+                gl::STATIC_DRAW);
+        }
+    }
+    
     pub fn draw(&self, length: usize, offset: usize) {
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::TRIANGLES, offset as GLint, length as GLsizei);
+        }
+    }
+    pub fn draw_elements(&self, length: usize, offset: usize) {
+        const USIZE: usize = size_of::<u32>();
+        unsafe {
+            gl::BindVertexArray(self.vao);
+            gl::DrawElements(
+                gl::TRIANGLES,
+                length as GLsizei,
+                gl::UNSIGNED_INT,
+                (offset * USIZE) as *const _);
         }
     }
 }

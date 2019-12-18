@@ -1,5 +1,6 @@
 
 use gl::types::*;
+use glam::{Vec2, Vec3, Vec4, Mat4};
 use std::ffi::CStr;
 use std::ffi::CString;
 
@@ -49,6 +50,10 @@ impl Drop for Shader {
     fn drop(&mut self) {
         unsafe { gl::DeleteShader(self.0) };
     }
+}
+
+pub trait SetUniform<T> {
+    fn set_uniform(&self, location: Uniform, value: &T);
 }
 
 pub struct Program(GLuint);
@@ -110,19 +115,41 @@ impl Program {
         unsafe { gl::UseProgram(self.0) };
     }
     
-    pub fn get_uniform(&self, name: &str) -> Result<Uniform, String> {
+    pub fn get_uniform(&self, name: &str) -> Option<Uniform> {
         unsafe {
             let string = CString::new(name).unwrap();
             let uniform = gl::GetUniformLocation(self.0, string.as_ptr());
             
-            if uniform == -1 {
-                Err(format!("Could not find uniform: '{}'", name))
+            if uniform >= 0 {
+                Some(uniform)
             } else {
-                Ok(uniform)
+                None
             }
         }
     }
 }
+
+impl SetUniform<Vec2> for Program {
+    fn set_uniform(&self, location: Uniform, value: &Vec2) {
+        unsafe { gl::Uniform2f(location, value.x(), value.y()) };
+    }
+}
+impl SetUniform<Vec3> for Program {
+    fn set_uniform(&self, location: Uniform, value: &Vec3) {
+        unsafe { gl::Uniform3f(location, value.x(), value.y(), value.z()) };
+    }
+}
+impl SetUniform<Vec4> for Program {
+    fn set_uniform(&self, location: Uniform, value: &Vec4) {
+        unsafe { gl::Uniform4f(location, value.x(), value.y(), value.z(), value.w()) };
+    }
+}
+impl SetUniform<Mat4> for Program {
+    fn set_uniform(&self, location: Uniform, value: &Mat4) {
+        unsafe { gl::UniformMatrix4fv(location, 1, gl::FALSE, value.as_ref().as_ptr()) };
+    }
+}
+
 impl Drop for Program {
     fn drop(&mut self) {
         unsafe { gl::DeleteProgram(self.0) };
